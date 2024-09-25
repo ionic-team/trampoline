@@ -1,5 +1,5 @@
 import { Context } from "../../ctx";
-import { XmlFile } from '@trapezedev/project';
+import { XmlFile } from '../../../project';
 import { AndroidXmlOperation, Operation, OperationMeta } from "../../definitions";
 import { error } from "../../util/log";
 

@@ -11,3 +11,7 @@ export * from './strings';
 export * from './xcconfig';
 export * from './vfs';
 export * from './util/plist';
+export * from "./assets/ios/generator";
+export * from "./assets/android/generator"
+export * from "./assets/input-asset";
+export * from "./assets/asset-types";

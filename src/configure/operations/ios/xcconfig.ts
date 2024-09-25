@@ -1,6 +1,6 @@
 import { Context } from '../../ctx';
 import { IosXCConfigOperation, Operation, OperationMeta } from '../../definitions';
-import { XCConfigFile } from '@trapezedev/project';
+import { XCConfigFile } from '../../../project';
 
 export default async function execute(ctx: Context, op: Operation) {
   const stringsOp = op as IosXCConfigOperation;

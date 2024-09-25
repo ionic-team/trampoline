@@ -1,6 +1,6 @@
 import { join } from 'path';
 
-import { JsonFile } from '@trapezedev/project';
+import { JsonFile } from '../../../project';
 import { Context } from '../../ctx';
 import { IosJsonOperation, Operation, OperationMeta } from '../../definitions';
 

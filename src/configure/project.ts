@@ -1,5 +1,5 @@
 import { join } from 'path';
-import { MobileProject, MobileProjectConfig } from '@trapezedev/project';
+import { MobileProject, MobileProjectConfig } from '../project';
 import { Args, Context } from './ctx';
 import { pathExists } from '@ionic/utils-fs';
 import { error } from './util/log';

@@ -6,7 +6,7 @@ import { loadYamlConfig, YamlFile } from '../yaml-config';
 import { isOpRegistered, loadHandlers, OperationHandlers, runOperation } from '../operations/index';
 import { Context } from '../ctx';
 import { Operation } from '../definitions';
-import { Logger, VFSDiff } from '@trapezedev/project';
+import { Logger, VFSDiff } from '../../project';
 import kleur from 'kleur';
 
 export async function runCommand(ctx: Context, configFile: YamlFile) {

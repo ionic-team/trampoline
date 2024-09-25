@@ -1,5 +1,5 @@
 
-import { VFS, XmlFile } from '@trapezedev/project';
+import { VFS, XmlFile } from '../../../project';
 import { join } from 'path';
 
 import { Context } from "../../ctx";

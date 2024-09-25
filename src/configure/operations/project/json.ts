@@ -1,6 +1,6 @@
 import { join } from 'path';
 
-import { JsonFile, VFS } from '@trapezedev/project';
+import { JsonFile, VFS } from '../../../project';
 import { Context } from '../../ctx';
 import { JsonOperation, Operation, OperationMeta } from '../../definitions';
 

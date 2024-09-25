@@ -1,4 +1,4 @@
-import { parsePlistString } from '@trapezedev/project';
+import { parsePlistString } from '../../../project';
 import { Context } from '../../ctx';
 import { IosPlistOperationValue, Operation, OperationMeta } from '../../definitions';
 import { logger } from '../../util/log';

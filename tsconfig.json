@@ -14,5 +14,5 @@
       "target": "es2019",
       "lib": ["dom", "es2019"]
     },
-    "include": ["src/**/*.ts"],
+    "include": ["src/*.ts","src/**/*.ts"],
   }

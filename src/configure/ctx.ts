@@ -3,7 +3,7 @@ import { join } from 'path';
 import { hideBin } from 'yargs/helpers';
 
 import { loadProject } from './project';
-import { Logger, MobileProject } from '@trapezedev/project';
+import { Logger, MobileProject } from '../project';
 import { log, warn } from './util/log';
 
 export interface Args {

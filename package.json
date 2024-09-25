@@ -5,15 +5,17 @@
   "private": false,
 
   "scripts": {
-    "build": "tsc",
-    "shipit": "npm run build-jar -w packages/gradle-parse && npm run build -- --force && npm run test && npx changeset publish && git push --tags"
+    "build": "tsc"
   },
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "dependencies": {
     "@ionic/utils-fs": "^3.1.5",
     "@ionic/utils-subprocess": "^2.1.8",
     "@prettier/plugin-xml": "^2.2.0",
-    "@trapezedev/gradle-parse": "7.0.10",
     "@xmldom/xmldom": "^0.7.5",
     "conventional-changelog": "^3.1.4",
     "cross-fetch": "^3.1.5",
@@ -38,7 +40,6 @@
     "xml-js": "^1.6.11",
     "xpath": "^0.0.32",
     "yargs": "^17.2.1",
-    "@trapezedev/project": "7.0.10",
     "@ionic/cli-framework-output": "^2.2.2",
     "@ionic/utils-terminal": "^2.3.1",
     "@types/fs-extra": "^9.0.13",

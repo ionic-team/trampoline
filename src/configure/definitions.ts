@@ -1,4 +1,4 @@
-import { AndroidGradleInjectType } from '@trapezedev/project';
+import { AndroidGradleInjectType } from '../project';
 
 export type OperationMeta = string[];
 export interface Operation {

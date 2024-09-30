@@ -39,7 +39,7 @@ export class GradleFile extends VFSStorable {
   /**
    * Replace the given properties at the specified point in the Gradle file or insert
    * if the replacement doesn't exist
-   * 
+   *
    * exact specifies whether the pathObject should be exact from the root of the document or
    * if it can match on a sub-object
    **/
@@ -523,7 +523,7 @@ export class GradleFile extends VFSStorable {
   }
 
   getGradleParserPath() {
-    return dirname(require.resolve('@trapezedev/gradle-parse'));
+    return dirname(require.resolve('@capacitor/gradle-parse'));
   }
 
   async setApplicationId(applicationId: string) {
@@ -736,7 +736,7 @@ export class GradleFile extends VFSStorable {
             );
             lines.push('}');
           } else {
-            // Create a variable entry if the target node type is a variable or 
+            // Create a variable entry if the target node type is a variable or
             // the provided type is a variable
             if (targetNode.type === 'variable' || type === AndroidGradleInjectType.Variable) {
               lines.push(`${key} = ${JSON.stringify(editEntry)}`);

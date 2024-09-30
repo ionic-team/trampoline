@@ -13,6 +13,7 @@
     "dist"
   ],
   "dependencies": {
+    "@capacitor/gradle-parse": "8.0.0",
     "@ionic/utils-fs": "^3.1.5",
     "@ionic/utils-subprocess": "^2.1.8",
     "@prettier/plugin-xml": "^2.2.0",

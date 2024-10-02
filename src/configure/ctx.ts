@@ -27,7 +27,7 @@ export interface Variable {
   type?: VariableType;
 }
 
-export const enum VariableType {
+export enum VariableType {
   String = "string",
   Number = "number",
   Array = "array",

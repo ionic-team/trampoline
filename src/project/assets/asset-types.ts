@@ -26,7 +26,7 @@ export interface Assets {
   pwaSplashDark?: InputAsset | null;
 }
 
-export const enum AssetKind {
+export enum AssetKind {
   Logo = 'logo',
   LogoDark = 'logo-dark',
   AdaptiveIcon = 'adaptive-icon',
@@ -36,13 +36,13 @@ export const enum AssetKind {
   NotificationIcon = 'notification-icon'
 }
 
-export const enum Platform {
+export enum Platform {
   Any = 'any',
   Ios = 'ios',
   Android = 'android'
 }
 
-export const enum Format {
+export enum Format {
   Png = 'png',
   Jpeg = 'jpeg',
   Svg = 'svg',
@@ -50,19 +50,19 @@ export const enum Format {
   Unknown = 'unknown',
 }
 
-export const enum Orientation {
+export enum Orientation {
   Default = '',
   Portrait = 'portrait',
   Landscape = 'landscape',
 }
 
-export const enum Theme {
+export enum Theme {
   Any = 'any',
   Light = 'light',
   Dark = 'dark',
 }
 
-export const enum AndroidDensity {
+export enum AndroidDensity {
   Default = '',
   Ldpi = 'ldpi',
   Mdpi = 'mdpi',
@@ -118,7 +118,7 @@ export interface IosOutputAssetTemplate extends OutputAssetTemplate {
 }
 
 // https://developer.apple.com/library/archive/documentation/Xcode/Reference/xcode_ref-Asset_Catalog_Format/ImageSetType.html#//apple_ref/doc/uid/TP40015170-CH25-SW2
-export const enum IosIdiom {
+export enum IosIdiom {
   Universal = 'universal',
   iPhone = 'iphone',
   iPad = 'ipad',

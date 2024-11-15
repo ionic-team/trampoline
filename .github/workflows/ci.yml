@@ -1,35 +1,27 @@
 on:
   pull_request:
+  workflow_dispatch:
   push:
     branches:
     - main
 
 jobs:
   setup:
-    name: Setup Node
+    name: Build Package
     runs-on: ubuntu-latest
     steps:
-      - name: Get Latest
+      - name: Checkout
+      - uses: actions/checkout@v4
+      - name: Install Node
         uses: actions/setup-node@v4
         with:
           node-version: 20.x
-      - uses: actions/checkout@v4
       - name: Restore Dependency Cache
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: ${{ runner.OS }}-dependencies-cache-${{ hashFiles('**/package.json') }}
-  build:
-    name: Build Package
-    runs-on: ubuntu-latest
-    needs:
-      - setup
-    steps:
-      - uses: actions/checkout@v4
-      - name: Restore Dependency Cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.OS }}-dependencies-cache-${{ hashFiles('**/package.json') }}
-      - run: npm install
-      - run: npm run build
+          key: ${{ runner.OS }}-npm-${{ hashFiles('**/package.json') }}
+      - name: Install Dependencies
+        run: npm install
+      - name: Build Package
+        run: npm run build

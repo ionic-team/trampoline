@@ -1,3 +1,4 @@
+name: Build and Test Trampoline
 on:
   pull_request:
   workflow_dispatch:
@@ -11,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-      - uses: actions/checkout@v4
+        uses: actions/checkout@v4
       - name: Install Node
         uses: actions/setup-node@v4
         with:

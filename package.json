@@ -19,7 +19,7 @@
     "@xmldom/xmldom": "^0.7.5",
     "conventional-changelog": "^3.1.4",
     "cross-spawn": "^7.0.3",
-    "diff": "^5.1.0",
+    "diff": "^7.0.0",
     "env-paths": "^3.0.0",
     "gradle-to-js": "^2.0.0",
     "ini": "^2.0.0",

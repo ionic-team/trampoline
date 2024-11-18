@@ -14,7 +14,7 @@
   "dependencies": {
     "@capacitor/gradle-parse": "8.0.0",
     "@ionic/utils-fs": "^3.1.5",
-    "@ionic/utils-subprocess": "^2.1.8",
+    "@ionic/utils-subprocess": "^3.0.1",
     "@prettier/plugin-xml": "^2.2.0",
     "@xmldom/xmldom": "^0.7.5",
     "cross-spawn": "^7.0.3",

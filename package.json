@@ -15,7 +15,7 @@
     "@capacitor/gradle-parse": "8.0.0",
     "@ionic/utils-fs": "^3.1.5",
     "@ionic/utils-subprocess": "^2.1.8",
-    "@prettier/plugin-xml": "^2.2.0",
+    "@prettier/plugin-xml": "^3.1.0",
     "@xmldom/xmldom": "^0.7.5",
     "cross-spawn": "^7.0.3",
     "diff": "^7.0.0",

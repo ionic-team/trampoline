@@ -4,7 +4,8 @@
   "description": "Project modification tool for capacitor",
   "private": false,
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "release": "tsc && npm version minor && npm publish --dry-run"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

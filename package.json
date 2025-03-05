@@ -1,6 +1,6 @@
 {
   "name": "@capacitor/trampoline",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Project modification tool for capacitor",
   "private": false,
   "scripts": {

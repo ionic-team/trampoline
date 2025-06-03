@@ -565,7 +565,7 @@ export class IosProject extends PlatformProject {
     if (!file) {
       if (this.project?.config?.ios?.path) {
         const targetDir = targetName || 'App';
-        const fname = `${(targetName || 'App').split(/\s+/).join('_')}.entitlements`;
+        const fname = `${(targetName || 'App').split(/\s+/).join('_')}${buildName ? `_${buildName}` : ''}.entitlements`;
 
         // Create the default entitlements file
         const target = join(this.project.config.ios.path, targetDir, fname)

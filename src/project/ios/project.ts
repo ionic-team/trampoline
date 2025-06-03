@@ -565,14 +565,18 @@ export class IosProject extends PlatformProject {
     if (!file) {
       if (this.project?.config?.ios?.path) {
         const targetDir = targetName || 'App';
-        const fname = `${(targetName || 'App').split(/\s+/).join('_')}.entitlements`;
-
+        const targetNamePrefix = targetName || 'App';
+        const buildNameSuffix = buildName ? `_${buildName}` : '';
+        const fileName = `${targetNamePrefix}${buildNameSuffix}.entitlements`
+          .split(/\s+/)
+          .join('_');
+        
         // Create the default entitlements file
-        const target = join(this.project.config.ios.path, targetDir, fname)
+        const target = join(this.project.config.ios.path, targetDir, fileName)
         await writeFile(target, defaultEntitlementsPlist);
 
         // Always use posix paths
-        file = join(targetDir, fname).split(path.sep).join(path.posix.sep);
+        file = join(targetDir, fileName).split(path.sep).join(path.posix.sep);
 
         this.setBuildProperty(targetName, buildName, 'CODE_SIGN_ENTITLEMENTS', file);
       } else {

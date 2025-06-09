@@ -20,7 +20,7 @@
     "@prettier/plugin-xml": "^2.2.0",
     "@xmldom/xmldom": "^0.7.5",
     "cross-spawn": "^7.0.3",
-    "diff": "^7.0.0",
+    "diff": "^8.0.2",
     "ini": "^5.0.0",
     "kleur": "^4.1.5",
     "lodash": "^4.17.21",

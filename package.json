@@ -33,7 +33,7 @@
     "xcode": "^3.0.1",
     "xml-js": "^1.6.11",
     "xpath": "^0.0.32",
-    "yargs": "^17.2.1",
+    "yargs": "^18.0.0",
     "@ionic/cli-framework-output": "^2.2.2",
     "@ionic/utils-terminal": "^2.3.1",
     "commander": "^8.2.0",

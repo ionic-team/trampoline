@@ -1,9 +1,8 @@
-import plist, { PlistObject, PlistValue } from "plist";
 import { relative } from 'path';
 import { pathExists, readFile, writeFile } from '@ionic/utils-fs';
 import { mergeWith, union } from 'lodash';
 
-import { parsePlist, parsePlistString } from "./util/plist";
+import { buildPlist, parsePlist, parsePlistString, type PlistObject } from "./util/plist";
 import { VFS, VFSRef, VFSFile, VFSStorable } from "./vfs";
 import { MobileProject } from "./project";
 import { Logger } from "./logger";
@@ -51,11 +50,7 @@ export class PlistFile extends VFSStorable {
 
   private plistCommitFn = async (file: VFSFile) => {
     const data = file.getData() as PlistFile;
-    const xml = plist.build(data.getDocument() ?? {}, {
-      indent: '	', // Tab character
-      offset: -1,
-      newline: '\n'
-    });
+    const xml = await buildPlist(data.getDocument() ?? {});
     await assertParentDirs(file.getFilename());
     return writeFile(file.getFilename(), xml);
   }
@@ -67,11 +62,7 @@ export class PlistFile extends VFSStorable {
     } catch (e) {}
 
     const data = file.getData() as PlistFile;
-    const xml = plist.build(data.getDocument() ?? {}, {
-      indent: '	', // Tab character
-      offset: -1,
-      newline: '\n'
-    });
+    const xml = await buildPlist(data.getDocument() ?? {});
 
     return {
       old,
@@ -80,7 +71,7 @@ export class PlistFile extends VFSStorable {
   }
 
   async setFromXml(xml: string) {
-    const parsed = parsePlistString(xml);
+    const parsed = await parsePlistString(xml);
 
     this.doc = parsed;
   }

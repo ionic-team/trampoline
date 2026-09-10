@@ -1,4 +1,3 @@
-import plist from 'plist';
 import path, { join, sep } from 'path';
 import { copy, pathExists, readdir, writeFile } from '@ionic/utils-fs';
 

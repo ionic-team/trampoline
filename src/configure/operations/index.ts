@@ -31,7 +31,7 @@ export async function loadHandlers() {
     }
 
     try {
-      const f = await import(file);
+      const f = require(file);
 
       const meta = f.OPS;
 

@@ -1,10 +1,8 @@
 /// <reference lib="dom" />
 
-import { dirname } from 'path';
 import { readFile, writeFile } from '@ionic/utils-fs';
 import xmldom, { XMLSerializer } from '@xmldom/xmldom';
-import prettier from 'prettier/standalone';
-import prettierXml from '@prettier/plugin-xml';
+import { format } from 'prettier';
 
 export async function parseXml(filename: string) {
   let contents = await readFile(filename, { encoding: 'utf-8' });
@@ -23,19 +21,18 @@ export function serializeXml(doc: any) {
 }
 
 export async function formatXml(doc: any) {
-  var xml = new XMLSerializer().serializeToString(doc);
+  const xml = new XMLSerializer().serializeToString(doc);
 
-  const p = dirname(require.resolve('@prettier/plugin-xml'));
+  const { default: prettierXml } = await import('@prettier/plugin-xml');
 
-  const formatted = prettier.format(xml, {
+  const formatted = await format(xml, {
     parser: 'xml',
     printWidth: 120,
     bracketSameLine: true,
-    xmlWhitespaceSensitivity: 'ignore',
+    xmlWhitespaceSensitivity: 'preserve',
     tabWidth: 4,
-    pluginSearchDirs: [p],
-    plugins: [prettierXml]
-  } as any);
+    plugins: [prettierXml],
+  });
 
   return formatted;
 }

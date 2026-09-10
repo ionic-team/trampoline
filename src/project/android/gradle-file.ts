@@ -1,6 +1,5 @@
 import { dirname, join } from 'path';
 import os from 'os';
-import tempy from 'tempy';
 import { pathExists, readFile, writeFile } from '@ionic/utils-fs';
 import { spawnCommand } from '../util/subprocess';
 import { indent } from '../util/text';
@@ -61,8 +60,7 @@ export class GradleFile extends VFSStorable {
       const foundParent = this.find(parent, exact);
 
       if (foundParent.length) {
-        this.insertIntoGradleFile([toReplace], foundParent[0], AndroidGradleInjectType.Infer);
-        return;
+        return this.insertIntoGradleFile([toReplace], foundParent[0], AndroidGradleInjectType.Infer);
       } else {
         throw new Error(
           'Unable to find target in Gradle file to replace or insert',
@@ -225,7 +223,8 @@ export class GradleFile extends VFSStorable {
     if (!this.tempFile) {
       // If the temp file doesn't exist yet, create it and write the current file source to it
       const gradleContents = await this.getGradleSource();
-      this.tempFile = tempy.file({ extension: 'gradle' });
+      const { temporaryFile } = await import('tempy');
+      this.tempFile = temporaryFile({ extension: 'gradle' });
       await writeFile(this.tempFile, gradleContents);
     } else if (vfsRef) {
       // Otherwise if it already exists then write the current vfs data to it

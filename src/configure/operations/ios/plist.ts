@@ -25,11 +25,11 @@ export default async function execute(ctx: Context, op: Operation) {
             }
           }
         } else if (pop.xml) {
-          file.setFromXml(pop.xml);
+          await file.setFromXml(pop.xml);
         }
       } else {
         if (pop.xml) {
-          const entries = parsePlistString(pop.xml);
+          const entries = await parsePlistString(pop.xml);
           await ctx.project.ios?.updateInfoPlist(pop.iosTarget ?? null, pop.iosBuild ?? null, entries, {
             replace: pop.replace ?? false
           });

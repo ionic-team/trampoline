@@ -2,7 +2,7 @@ import { formatXml, parseXml, parseXmlString, serializeXml, writeXml } from './u
 import xpath, { XPathSelect } from 'xpath';
 import { xml2js, js2xml } from 'xml-js';
 import { VFS, VFSFile, VFSStorable } from './vfs';
-import { readFile } from 'fs-extra';
+import { readFile } from '@ionic/utils-fs';
 import { Logger } from './logger';
 import { assertParentDirs } from './util/fs';
 
@@ -99,14 +99,17 @@ export class XmlFile extends VFSStorable {
     }
 
     const nodes = this.select?.(target, this.doc) as Element[];
-    const parsed = parseXmlString(fragment);
-    const docNodes = parsed.childNodes ?? [];
 
     Logger.v('xml', 'injectFragment', `at ${target}`);
 
-    nodes.forEach(n =>
-      Array.prototype.forEach.call(docNodes, d => n.appendChild(d)),
-    );
+    nodes.forEach(n => {
+      const parsed = parseXmlString(fragment);
+      const children = Array.prototype.slice.call(parsed.childNodes ?? []) as any[];
+      const firstElement = children.findIndex(d => d.nodeType === 1);
+      children
+        .filter((d, i) => firstElement < 0 || i <= firstElement || d.nodeType !== 3)
+        .forEach(d => n.appendChild(d));
+    });
 
     this.vfs.set(this.path, this);
   }
@@ -197,12 +200,12 @@ export class XmlFile extends VFSStorable {
     }
 
     const nodes = this.select?.(target, this.doc) as Element[];
-    const parsed = parseXmlString(fragment);
 
     nodes.forEach(n => {
       const index = Array.prototype.indexOf.call(n.parentNode?.childNodes, n);
       if (index >= 0) {
         const parent = n.parentNode;
+        const parsed = parseXmlString(fragment);
         parent!.removeChild(n);
         parent!.insertBefore(
           parsed.documentElement,
@@ -226,7 +229,7 @@ export class XmlFile extends VFSStorable {
 
     Logger.v('xml', 'setAttrs', `at ${this.path} - ${target}`);
 
-    const nodes = this.select?.(target, this.doc) ?? [];
+    const nodes = (this.select?.(target, this.doc) ?? []) as Element[];
     nodes.forEach((n: any) => {
       Object.keys(attrs).forEach(attr => {
         n.setAttribute(attr, attrs[attr]);

@@ -95,7 +95,16 @@ export class VFS {
   }
 
   async commitAll(project: MobileProject) {
-    await Promise.all(Object.values(this.openFiles).map(file => file.commit()));
+    // allSettled, not all: a rejection propagates to fatal(), which exits the
+    // process synchronously and truncates every write still in flight.
+    const results = await Promise.allSettled(
+      Object.values(this.openFiles).map(file => file.commit()),
+    );
+
+    const failed = results.find(r => r.status === 'rejected');
+    if (failed) {
+      throw (failed as PromiseRejectedResult).reason;
+    }
   }
 
   async diffAll() {

@@ -1,6 +1,5 @@
 import { Subprocess, SubprocessError } from "@ionic/utils-subprocess";
 import { spawn } from 'cross-spawn';
-import chalk from "chalk";
 
 export async function runCommand(command: string, args: string[], options = {}): Promise<string> {
   // console.log(chalk`> {bold ${command} ${args.join(" ")}}`);
@@ -15,13 +14,7 @@ export async function runCommand(command: string, args: string[], options = {}):
   } catch (e) {
     if (e instanceof SubprocessError) {
       // old behavior of just throwing the stdout/stderr strings
-      throw e.output
-        ? e.output
-        : e.code
-          ? e.code
-          : e.error
-            ? e.error.message
-            : "Unknown error";
+      throw e.output || e.code || (e.cause as Error | undefined)?.message || e.message || "Unknown error";
     }
 
     throw e;

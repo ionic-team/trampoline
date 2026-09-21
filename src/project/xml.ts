@@ -1,4 +1,4 @@
-import { formatXml, parseXml, parseXmlString, serializeXml, writeXml } from './util/xml';
+import { formatXml, parseXml, parseXmlFragment, parseXmlString, serializeXml, writeXml } from './util/xml';
 import xpath, { XPathSelect } from 'xpath';
 import { xml2js, js2xml } from 'xml-js';
 import { VFS, VFSFile, VFSStorable } from './vfs';
@@ -103,12 +103,9 @@ export class XmlFile extends VFSStorable {
     Logger.v('xml', 'injectFragment', `at ${target}`);
 
     nodes.forEach(n => {
-      const parsed = parseXmlString(fragment);
-      const children = Array.prototype.slice.call(parsed.childNodes ?? []) as any[];
-      const firstElement = children.findIndex(d => d.nodeType === 1);
-      children
-        .filter((d, i) => firstElement < 0 || i <= firstElement || d.nodeType !== 3)
-        .forEach(d => n.appendChild(d));
+      // Parsed per match: appendChild moves a node rather than copying it, so a
+      // single parse would empty itself into the first match.
+      parseXmlFragment(fragment).forEach(d => n.appendChild(d));
     });
 
     this.vfs.set(this.path, this);
@@ -159,7 +156,10 @@ export class XmlFile extends VFSStorable {
   // Recursively merge nodes with some heuristics based on
   // likely merge expectations
   _mergeJson(target: any, fragment: any) {
-    for (const e of fragment.elements) {
+    // An element written with no children has no `elements` array at all.
+    target.elements ??= [];
+
+    for (const e of fragment.elements ?? []) {
       let child: Element | null = null;
 
       for (const t of target.elements) {

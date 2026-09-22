@@ -15,7 +15,6 @@ import { NativeIosFramework } from './frameworks/native-ios';
 import { NativeAndroidFramework } from './frameworks/native-android';
 import { NativeScriptFramework } from './frameworks/nativescript';
 import { Logger } from './logger';
-import { Assets } from './assets/asset-types'
 
 export class MobileProject {
   public framework: Framework | null = null;
@@ -23,7 +22,6 @@ export class MobileProject {
   public android: AndroidProject | null = null;
   vfs: VFS;
 
-  assets: Assets | null = null;
   directory: string | null = null;
   assetDir: string | null = null;
 

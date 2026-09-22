@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { mkdirp, pathExists, writeFile } from '@ionic/utils-fs';
-import { dirname, join, relative } from 'path';
+import { dirname, join } from 'path';
 import type { OutputInfo, Sharp } from 'sharp';
 import sharp from 'sharp';
 
@@ -14,7 +14,6 @@ import { AssetKind, Platform } from '../asset-types';
 import type { InputAsset } from '../input-asset';
 import { OutputAsset } from '../output-asset';
 import type { MobileProject } from '../../project';
-import { Logger } from '../../logger';
 
 import * as AndroidAssetTemplates from './assets';
 
@@ -118,70 +117,6 @@ export class AndroidAssetGenerator extends AssetGenerator {
     );
 
     return [...foregroundImages, ...backgroundImages];
-  }
-
-  private async _generateSplashesFromLogo(
-    project: MobileProject,
-    asset: InputAsset,
-    splash: AndroidOutputAssetTemplate,
-    pipe: Sharp,
-    backgroundColor: string,
-  ): Promise<OutputAsset> {
-    // Generate light splash
-    const resPath = this.getResPath(project);
-
-    let drawableDir = `drawable`;
-    if (splash.density) {
-      drawableDir = `drawable-${splash.density}`;
-    }
-
-    const parentDir = join(resPath, drawableDir);
-    if (!(await pathExists(parentDir))) {
-      await mkdirp(parentDir);
-    }
-    const dest = join(resPath, drawableDir, 'splash.png');
-
-    const targetLogoWidthPercent = this.options.logoSplashScale ?? 0.2;
-    let targetWidth = this.options.logoSplashTargetWidth ?? Math.floor((splash.width ?? 0) * targetLogoWidthPercent);
-
-    if (targetWidth > splash.width || targetWidth > splash.height) {
-      targetWidth = Math.floor((splash.width ?? 0) * targetLogoWidthPercent);
-    }
-
-    if (targetWidth > splash.width || targetWidth > splash.height) {
-      Logger.warn(`Logo dimensions exceed dimensions of splash ${splash.width}x${splash.height}, using default logo size`);
-      targetWidth = Math.floor((splash.width ?? 0) * 0.2);
-    }
-
-    const canvas = sharp({
-      create: {
-        width: splash.width ?? 0,
-        height: splash.height ?? 0,
-        channels: 4,
-        background: backgroundColor,
-      },
-    });
-
-    const resized = await sharp(asset.path).resize(targetWidth).toBuffer();
-
-    const outputInfo = await canvas
-      .composite([{ input: resized, gravity: sharp.gravity.center }])
-      .png()
-      .toFile(dest);
-
-    const splashOutput = new OutputAsset(
-      splash,
-      asset,
-      project,
-      {
-        [dest]: dest,
-      },
-      {
-        [dest]: outputInfo,
-      },
-    );
-
-    return splashOutput;
   }
 
   private async generateLegacyIcon(asset: InputAsset, project: MobileProject): Promise<OutputAsset[]> {

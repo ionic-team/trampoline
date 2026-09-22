@@ -12,8 +12,6 @@ import type { MobileProject } from '../../project';
 
 export const IOS_APP_ICON_SET_NAME = 'AppIcon';
 export const IOS_APP_ICON_SET_PATH = `App/Assets.xcassets/${IOS_APP_ICON_SET_NAME}.appiconset`;
-// export const IOS_SPLASH_IMAGE_SET_NAME = 'Splash';
-// export const IOS_SPLASH_IMAGE_SET_PATH = `App/Assets.xcassets/${IOS_SPLASH_IMAGE_SET_NAME}.imageset`;
 
 export const IOS_1024_ICON: IosOutputAssetTemplate = {
   platform: Platform.Ios,
@@ -58,8 +56,6 @@ export class IosAssetGenerator extends AssetGenerator {
     if (!pipe) {
       throw new Error('Sharp instance not created');
     }
-
-    const iosDir = project.config.ios!.path!;
 
     // Generate logos
     let logos: OutputAsset[] = [];

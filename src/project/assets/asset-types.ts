@@ -1,31 +1,3 @@
-import type { InputAsset } from './input-asset';
-
-export interface Assets {
-  logo: InputAsset | null;
-  logoDark: InputAsset | null;
-  icon: InputAsset | null;
-  iconForeground: InputAsset | null;
-  iconBackground: InputAsset | null;
-  splash: InputAsset | null;
-  splashDark: InputAsset | null;
-
-  iosIcon?: InputAsset | null;
-  iosSplash?: InputAsset | null;
-  iosSplashDark?: InputAsset | null;
-
-  androidIcon?: InputAsset | null;
-  androidIconForeground?: InputAsset | null;
-  androidIconBackground?: InputAsset | null;
-
-  androidSplash?: InputAsset | null;
-  androidSplashDark?: InputAsset | null;
-  androidNotificationIcon?: InputAsset | null;
-
-  pwaIcon?: InputAsset | null;
-  pwaSplash?: InputAsset | null;
-  pwaSplashDark?: InputAsset | null;
-}
-
 export enum AssetKind {
   Logo = 'logo',
   LogoDark = 'logo-dark',
@@ -33,7 +5,6 @@ export enum AssetKind {
   Icon = 'icon',
   IconForeground = 'icon-foreground',
   IconBackground = 'icon-background',
-  NotificationIcon = 'notification-icon'
 }
 
 export enum Platform {
@@ -48,18 +19,6 @@ export enum Format {
   Svg = 'svg',
   WebP = 'webp',
   Unknown = 'unknown',
-}
-
-export enum Orientation {
-  Default = '',
-  Portrait = 'portrait',
-  Landscape = 'landscape',
-}
-
-export enum Theme {
-  Any = 'any',
-  Light = 'light',
-  Dark = 'dark',
 }
 
 export enum AndroidDensity {
@@ -126,38 +85,9 @@ export enum IosIdiom {
   TV = 'tv',
 }
 
-export type IosOutputAssetTemplateIcon = IosOutputAssetTemplate;
-export interface IosOutputAssetTemplateSplash extends IosOutputAssetTemplate {
-  orientation: Orientation;
-  theme: Theme;
-}
-export interface PwaOutputAssetTemplate extends OutputAssetTemplate {
-  name: string;
-  orientation?: Orientation;
-  density?: string;
-}
-
 export interface AndroidOutputAssetTemplate extends OutputAssetTemplate {
   density: AndroidDensity;
 }
-export interface AndroidOutputAssetTemplateSplash extends OutputAssetTemplate {
-  density: AndroidDensity;
-  orientation: Orientation;
-}
 export interface AndroidOutputAssetTemplateAdaptiveIcon extends OutputAssetTemplate {
   density: AndroidDensity;
-}
-
-// Shape of the Contents.json file inside of ios app appiconset and imageset folders
-export interface IosContents {
-  images: {
-    filename: string;
-    size: string;
-    scale: string;
-    idiom: string;
-  }[];
-  info?: {
-    version: number;
-    author: string;
-  };
 }

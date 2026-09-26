@@ -205,12 +205,16 @@ export class XmlFile extends VFSStorable {
       const index = Array.prototype.indexOf.call(n.parentNode?.childNodes, n);
       if (index >= 0) {
         const parent = n.parentNode;
-        const parsed = parseXmlString(fragment);
+        // Parsed per match: insertBefore moves a node rather than copying it, so a single parse
+        // would empty itself into the first match.
+        const replacements = parseXmlFragment(fragment);
+
         parent!.removeChild(n);
-        parent!.insertBefore(
-          parsed.documentElement,
-          parent?.childNodes[index] ?? null,
-        );
+
+        // Read the anchor after the removal: childNodes[index] is then the node that followed
+        // the one replaced, or undefined when it was last.
+        const anchor = parent?.childNodes[index] ?? null;
+        replacements.forEach(r => parent!.insertBefore(r, anchor));
       }
     });
 

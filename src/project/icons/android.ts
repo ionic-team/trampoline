@@ -228,10 +228,18 @@ async function writeLegacyIcon(
   const dest = mipmap(project, density, 'ic_launcher.png');
   await assertParentDirs(dest);
 
-  const padding = 8;
+  // The margin is part of a pre-adaptive icon: launchers drew these bitmaps unmasked, so the
+  // breathing room had to be in the image. size/12 holds it at the template's ~83% artwork at
+  // every density.
+  const padding = Math.round(size / 12);
 
   // Two separate pipelines, per https://github.com/lovell/sharp/issues/2378#issuecomment-864132578
-  const resized = await sharp(source).resize(size, size, CONTAIN).toBuffer();
+  // .png() on every intermediate: without it the buffer keeps the source's encoding, and a
+  // JPEG has no alpha channel for the letterbox padding to land in - it comes out black.
+  const resized = await sharp(source)
+    .resize(size, size, CONTAIN)
+    .png()
+    .toBuffer();
   const padded = await sharp(resized)
     .resize(
       Math.max(0, size - padding * 2),
@@ -245,6 +253,7 @@ async function writeLegacyIcon(
       right: padding,
       background: TRANSPARENT,
     })
+    .png()
     .toBuffer();
 
   await sharp(padded).png().toFile(dest);
@@ -265,9 +274,15 @@ async function writeLegacyRoundIcon(
     size / 2
   }" fill="#ffffff"/></svg>`;
 
-  const resized = await sharp(source).resize(size, size, CONTAIN).toBuffer();
+  // Same as above, and it matters more here: `dest-in` writes the circle into the alpha
+  // channel, so without one the mask is silently dropped and the icon stays square.
+  const resized = await sharp(source)
+    .resize(size, size, CONTAIN)
+    .png()
+    .toBuffer();
   const masked = await sharp(resized)
     .composite([{ input: Buffer.from(circle), blend: 'dest-in' }])
+    .png()
     .toBuffer();
 
   await sharp(masked).png().toFile(dest);

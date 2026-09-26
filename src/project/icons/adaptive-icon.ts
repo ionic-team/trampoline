@@ -1,7 +1,6 @@
 import { mkdirp, pathExists, unlink, writeFile } from '@ionic/utils-fs';
 import { join } from 'path';
 
-import { assertParentDirs } from '../util/fs';
 import type { XmlFile } from '../xml';
 import type { MobileProject } from '../project';
 

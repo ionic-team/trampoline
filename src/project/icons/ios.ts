@@ -17,9 +17,9 @@ export const IOS_APP_ICON_SET_NAME = 'AppIcon';
 export const IOS_APP_ICON_SET_PATH = `App/Assets.xcassets/${IOS_APP_ICON_SET_NAME}.appiconset`;
 
 /**
- * An Icon Composer bundle, installed beside the asset catalog. It shares the app icon set's name
- * on purpose: a target declares one `ASSETCATALOG_COMPILER_APPICON_NAME`, so only one of the two
- * may exist, and setting either clears the other.
+ * An Icon Composer bundle, installed beside the asset catalog. It deliberately shares the app
+ * icon set's name, because a target declares a single `ASSETCATALOG_COMPILER_APPICON_NAME`. Only
+ * one of the two can exist, so setting either one clears the other.
  */
 export const IOS_LAYERED_APP_ICON_PATH = `App/${IOS_APP_ICON_SET_NAME}.icon`;
 
@@ -32,20 +32,20 @@ const APP_ICON = {
 
 const DEFAULT_BACKGROUND_COLOR = '#ffffff';
 
-// `xcode` knows a handful of extensions and calls the rest `unknown`. A `.icon` labelled that way
-// is copied in as an opaque directory and never reaches actool - no icon, and no build error.
+// `xcode` only recognizes a handful of extensions and types the rest as `unknown`. A `.icon`
+// typed that way is copied in as an opaque directory and never reaches actool, giving no icon
+// and no build error.
 const LAYERED_APP_ICON_FILE_TYPE = 'folder.iconcomposer.icon';
 
 const APP_ICON_NAME_BUILD_SETTING = 'ASSETCATALOG_COMPILER_APPICON_NAME';
 
 /**
- * Set the app icon from one source image, written as an app icon set.
- *
- * The flat tier. Clears any layered app icon.
+ * Set the app icon from a single source image, written as an app icon set. Clears any layered
+ * app icon.
  *
  * @param source path to the app icon
- * @param backgroundColor what transparency is flattened onto. The App Store rejects icons with
- *   an alpha channel, so this is baked into the pixels rather than kept as a separate layer.
+ * @param backgroundColor the color transparency is flattened onto. The App Store rejects icons
+ *   with an alpha channel, so this is baked into the pixels instead of kept as a separate layer.
  * @returns the files written
  */
 export async function setAppIcon(
@@ -74,14 +74,14 @@ export async function setAppIcon(
 }
 
 /**
- * Set the app icon from an Icon Composer `.icon` bundle.
+ * Set the app icon from an Icon Composer `.icon` bundle, the only way to provide a dark or
+ * tinted appearance. The bundle is copied in verbatim; nothing here writes `icon.json`.
  *
- * The layered tier, and the only way to express a dark or tinted appearance. The bundle is copied
- * in verbatim - nothing here writes `icon.json`. Clears the app icon set; actool back-deploys
- * flattened icons from the bundle, so older iOS stays covered. Needs Xcode 26+ to build.
+ * Clears the app icon set. actool back-deploys flattened icons from the bundle, so older iOS
+ * versions stay covered, but building needs Xcode 26+.
  *
  * @param source path to the `.icon` bundle
- * @returns the installed bundle, which is one file to Xcode whatever it contains
+ * @returns the installed bundle, which Xcode treats as a single file
  */
 export async function setLayeredAppIcon(
   source: string,
@@ -91,8 +91,8 @@ export async function setLayeredAppIcon(
 
   const dest = join(iosRoot(project), IOS_LAYERED_APP_ICON_PATH);
 
-  // Removed first, not merged into: `copy` would leave a layer dropped since the last install
-  // sitting in Assets/, still being compiled.
+  // Remove first rather than copying over the top, or a layer dropped since the last install
+  // would be left behind in Assets/ and still compiled.
   await remove(dest);
   await copy(source, dest);
 
@@ -109,8 +109,8 @@ export async function setLayeredAppIcon(
 }
 
 /**
- * Delete the bundle and drop it from the project. Unregistering goes through the VFS, so - unlike
- * `clearAdaptiveIcon`, which only unlinks - the caller has to commit.
+ * Delete the bundle and remove it from the Xcode project. Unregistering goes through the VFS, so
+ * the caller has to commit afterwards. `clearAdaptiveIcon` only unlinks and needs no commit.
  */
 async function removeLayeredAppIcon(project: MobileProject): Promise<void> {
   await project.ios?.removeResourceFile(
@@ -122,8 +122,9 @@ async function removeLayeredAppIcon(project: MobileProject): Promise<void> {
 }
 
 /**
- * Prove we were handed a `.icon` bundle before anything is copied. Shallow - Icon Composer
- * authored it - but a wrong path otherwise installs cleanly and surfaces as an app with no icon.
+ * Check the source really is a `.icon` bundle before anything is copied. The check is shallow,
+ * since Icon Composer authors these. Without it, a wrong path installs cleanly and only shows up
+ * later as an app with no icon.
  */
 async function assertLayeredAppIconBundle(source: string): Promise<void> {
   if (!(await pathExists(source))) {
@@ -171,13 +172,14 @@ function iosRoot(project: MobileProject): string {
 async function updateContentsJson(assetsPath: string): Promise<void> {
   const contentsJsonPath = join(assetsPath, 'Contents.json');
 
-  // Setting a layered app icon deletes the set, so the template's copy may well be gone.
+  // Setting a layered app icon deletes the set, so the template's copy may be gone.
   const parsed = (await pathExists(contentsJsonPath))
     ? JSON.parse(await readFile(contentsJsonPath, { encoding: 'utf-8' }))
     : { images: [], info: { version: 1, author: 'xcode' } };
 
-  // NOTE: this drops every other image the catalog listed, and deletes the files. Dark and tinted
-  // variants would need to coexist here rather than be replaced - use `setLayeredAppIcon` for those.
+  // NOTE: this drops every other image the catalog listed and deletes the files. Dark and tinted
+  // variants would have to coexist here rather than replace each other, so for those use
+  // `setLayeredAppIcon`.
   for (const image of parsed.images ?? []) {
     if (image.filename && image.filename !== APP_ICON.name) {
       rmSync(join(assetsPath, image.filename), { force: true });
@@ -197,10 +199,11 @@ async function updateContentsJson(assetsPath: string): Promise<void> {
 }
 
 /**
- * Point the target at the app icon and flush the project. Every public function ends here, so
- * each is self-contained and a caller never has to remember to commit.
+ * Point the target at the app icon and flush the project. Every exported function ends here, so
+ * callers never have to commit themselves.
  *
- * Usually a no-op - the Capacitor template already sets this - but not every project does.
+ * Setting the build property is usually a no-op, since the Capacitor template already sets it,
+ * but not every project does.
  */
 async function commit(project: MobileProject): Promise<void> {
   if (project.ios?.getAppTarget()) {

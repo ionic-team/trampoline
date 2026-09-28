@@ -547,8 +547,9 @@ export class IosProject extends PlatformProject {
   /**
    * Add a file to the app target's Resources build phase.
    *
-   * Not `pbxProject.addResourceFile()`: it dereferences `pbxGroupByName('Resources')` unchecked,
-   * and the Capacitor template has no such group, so it throws. The primitives it wraps do not.
+   * `pbxProject.addResourceFile()` isn't used because it dereferences `pbxGroupByName('Resources')`
+   * without a null check and the Capacitor template has no such group, so it throws. The
+   * primitives it wraps are called directly instead.
    *
    * @param path project-relative, e.g. `App/AppIcon.icon`
    * @param lastKnownFileType the pbx file type, since `xcode` infers `unknown` for most extensions
@@ -564,10 +565,10 @@ export class IosProject extends PlatformProject {
     const file = new PbxFile(relativePath, { lastKnownFileType, target: targetId });
     file.target = targetId;
 
-    // Drop whatever is there and re-add, rather than bailing when a reference exists. That keeps
-    // repeat calls idempotent, and it repairs a reference that was never added to the build phase
-    // - one dragged into Xcode with "Add to targets" unchecked - which would otherwise pass a
-    // dedupe check while never reaching actool.
+    // Always remove and re-add, rather than bailing out when a reference already exists. That
+    // keeps repeat calls idempotent, and it repairs a reference that was never added to the
+    // build phase. One dragged into Xcode with "Add to targets" unchecked passes a dedupe check
+    // but never reaches actool.
     this.unregisterResourceFile(file, groupKey);
 
     file.uuid = pbx.generateUuid();
@@ -578,9 +579,9 @@ export class IosProject extends PlatformProject {
     pbx.addToPbxFileReferenceSection(file);
     pbx.addToPbxGroup(file, groupKey);
 
-    // The reference always carries a fixed key set, and the writer only drops empty ones under
-    // `omitEmptyValues`, which would change how the whole project serializes. Prune this object
-    // instead, or the pbxproj gains literal `fileEncoding = undefined;` lines.
+    // PbxFile always sets the same keys, and the writer only drops empty ones under
+    // `omitEmptyValues`, which would change how the whole project serializes. Prune this one
+    // object instead, or the pbxproj ends up with literal `fileEncoding = undefined;` lines.
     const ref = pbx.pbxFileReferenceSection()[file.fileRef];
 
     for (const key of Object.keys(ref)) {
@@ -607,9 +608,9 @@ export class IosProject extends PlatformProject {
   }
 
   /**
-   * Strip a file from the build file section, the reference section, its group and the Resources
-   * phase. Removing the reference adopts its existing uuid, so the later steps match; anything
-   * already absent is skipped.
+   * Remove a file from the build file section, the reference section, its group and the Resources
+   * build phase. Removing the reference copies the existing uuid onto `file`, so the later steps
+   * match it. Anything already absent is skipped.
    */
   private unregisterResourceFile(file: any, groupKey: string | undefined): void {
     const pbx = this.pbxProject;
@@ -625,9 +626,9 @@ export class IosProject extends PlatformProject {
   }
 
   /**
-   * Where a project-relative path belongs in the pbx tree: the app target's group if the path
-   * starts with the target directory, else the empty group at the root. The returned path is
-   * relative to that group, which is what a file reference stores.
+   * Work out where a project-relative path belongs in the pbx tree. A path starting with the
+   * target directory goes in the app target's group, anything else in the unnamed group at the
+   * root. The returned path is relative to that group, which is what a file reference stores.
    */
   private resolvePbxGroup(path: string): {
     relativePath: string;
@@ -640,7 +641,7 @@ export class IosProject extends PlatformProject {
       return value.isa === 'PBXGroup' && typeof value.name === 'undefined'
     });
 
-    // One lookup, not two: getTargets() rebuilds every target and its build configurations.
+    // Look the target up once; getTargets() rebuilds every target and its build configurations.
     const target = this.getAppTarget();
     const appTarget = target?.name;
     const appGroup = Object.entries(groups).find(([key, value]: [string, any]) => {

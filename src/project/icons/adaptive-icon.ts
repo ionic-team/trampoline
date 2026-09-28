@@ -4,13 +4,13 @@ import { join } from 'path';
 import type { XmlFile } from '../xml';
 import type { MobileProject } from '../project';
 
-/** The three layers an `<adaptive-icon>` can declare. All are optional to Android. */
+/** The layers an `<adaptive-icon>` can declare. Android treats all of them as optional. */
 export type AdaptiveIconLayer = 'foreground' | 'background' | 'monochrome';
 
 const ADAPTIVE_ICON_DIR = 'mipmap-anydpi-v26';
 
-// Written identically. android:roundIcon is only read on API 25, below the adaptive icon's own
-// API 26 floor, but the template ships both and a stale round icon is worse than a redundant one.
+// Both descriptors get the same content. ic_launcher_round.xml is only read on API 25, and
+// adaptive icons need API 26, but the template ships it, so keep the two in sync.
 const DESCRIPTOR_FILES = ['ic_launcher.xml', 'ic_launcher_round.xml'];
 
 const EMPTY = `<?xml version="1.0" encoding="utf-8"?>
@@ -18,11 +18,11 @@ const EMPTY = `<?xml version="1.0" encoding="utf-8"?>
 `;
 
 /**
- * The project's `mipmap-anydpi-v26/ic_launcher.xml` pair, as a document rather than a string.
+ * The project's `mipmap-anydpi-v26/ic_launcher.xml` and `ic_launcher_round.xml` descriptors.
  *
- * Every write replaces one whole element and leaves the rest alone, which cuts both ways: a layer
- * someone else added survives, and 0.5.0's `<background><inset android:inset="16.7%"/></background>`
- * is normalised away rather than having its drawable swapped inside a wrapper that keeps shrinking it.
+ * Each write replaces a whole layer element, so layers written by something else survive. A
+ * wrapper such as 0.5.0's `<background><inset android:inset="16.7%"/></background>` is replaced
+ * outright, rather than having its drawable swapped inside the inset.
  */
 export class AdaptiveIconDescriptor {
   private constructor(private readonly files: XmlFile[]) {}
@@ -40,7 +40,7 @@ export class AdaptiveIconDescriptor {
     for (const name of DESCRIPTOR_FILES) {
       const path = join(dir, name);
 
-      // XmlFile.load() reads from disk, so the file has to exist before it is opened.
+      // XmlFile.load() reads from disk, so the file has to exist before it can be opened.
       if (!(await pathExists(path))) {
         await writeFile(path, EMPTY);
       }
@@ -58,7 +58,7 @@ export class AdaptiveIconDescriptor {
     for (const name of DESCRIPTOR_FILES) {
       const path = join(resRoot(project), ADAPTIVE_ICON_DIR, name);
 
-      // Drop it from the VFS first, or the next commit writes the in-memory copy straight back.
+      // Close it in the VFS first, or the next commit writes the in-memory copy back to disk.
       const open = project.vfs.get(path);
       if (open) {
         project.vfs.close(open);
@@ -97,11 +97,12 @@ export function resRoot(project: MobileProject): string {
 }
 
 /**
- * Open a resource XML file and prove it is the document we think it is.
+ * Open a resource XML file, failing if its root element isn't `expectedRoot`.
  *
- * `XmlFile.load()` never rejects - a parse failure logs and leaves an empty document, and an
- * empty file becomes `<root />`. Either way every xpath matches nothing and edits are dropped
- * while the caller is told the write succeeded. Checking the root turns that into one failure.
+ * `XmlFile.load()` never rejects. A parse failure is logged and leaves an empty document, and an
+ * empty file parses as `<root />`. In both cases every xpath matches nothing, so edits are
+ * dropped while the caller is told the write succeeded. Checking the root turns that into an
+ * error instead.
  */
 export async function openXml(
   project: MobileProject,

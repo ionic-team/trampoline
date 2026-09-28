@@ -11,11 +11,13 @@ import type { MobileProject } from '../project';
 export type { AdaptiveIconLayer };
 
 /**
- * - `as-is`     an authored 108dp layer, already carrying its own padding.
- * - `viewport`  full-bleed artwork that *is* the whole icon, scaled into the visible 72dp.
+ * How a source image is fitted onto the 108dp layer canvas.
  *
- * Not Google's 66dp safe zone: that is the rule for a bare mark surviving a circular mask, and
- * on full-bleed artwork it leaves a ring of background showing.
+ * - `as-is`: an authored 108dp layer that already carries its own padding.
+ * - `viewport`: full-bleed artwork, scaled down to the area the mask can show.
+ *
+ * `viewport` doesn't use Google's 66dp safe zone. That zone sizes a bare mark to survive a
+ * circular mask, and on full-bleed artwork it leaves a ring of background showing.
  * https://developer.android.com/develop/ui/views/launch/icon_design_adaptive
  */
 export type LayerFit = 'as-is' | 'viewport';
@@ -29,8 +31,7 @@ const LEGACY_ICON_SIZES = {
   xxxhdpi: 192,
 } as const;
 
-// The 108dp layer canvas per density. No ldpi: the template ships no such folder and Android
-// has not meaningfully targeted that bucket in a decade.
+// The 108dp layer canvas at each density. No ldpi, since the template ships no such folder.
 const ADAPTIVE_LAYER_SIZES = {
   mdpi: 108,
   hdpi: 162,
@@ -40,13 +41,13 @@ const ADAPTIVE_LAYER_SIZES = {
 } as const;
 
 /**
- * The mask draws the central 72dp but can expose 74.25dp of it as black, so artwork bleeds to
- * 76dp.
+ * The mask draws the central 72dp of the 108dp canvas but can expose up to 74.25dp, so artwork
+ * is scaled to bleed a little past that, to 76dp.
  */
 const VIEWPORT_SCALE = 76 / 108;
 
-// sharp defaults to `cover`, which center-crops anything not already square - silently losing
-// the ends of a wordmark. Fit inside instead.
+// sharp defaults to `cover`, which center-crops anything that isn't already square and cuts the
+// ends off a wordmark. Fit inside instead.
 const CONTAIN = {
   fit: 'contain',
   background: { r: 0, g: 0, b: 0, alpha: 0 },
@@ -67,10 +68,10 @@ const mipmap = (project: MobileProject, density: string, file: string) =>
   join(resRoot(project), `mipmap-${density}`, file);
 
 /**
- * Generate mipmap-<density>/ic_launcher.png and ic_launcher_round.png.
+ * Generate `mipmap-<density>/ic_launcher.png` and `ic_launcher_round.png`.
  *
- * The pre-adaptive tier only, never read on API 26+. Neither tier substitutes for the other, so
- * a caller setting adaptive layers by hand needs these too.
+ * These are only read below API 26, and they aren't interchangeable with the adaptive icon, so
+ * a caller setting adaptive layers needs them as well.
  */
 export async function generateLegacyIcons(
   source: string,
@@ -109,8 +110,8 @@ export async function setAdaptiveIconBackground(
 /**
  * Point the adaptive icon's monochrome layer at an image.
  *
- * Read only when the user enables themed icons (API 33+), and tinted by the system - so only the
- * alpha silhouette survives, not the image's colors.
+ * Only read when the user enables themed icons (API 33+). The system tints it, so only the
+ * image's alpha channel has any effect, not its colors.
  */
 export async function setAdaptiveIconMonochrome(
   source: string,
@@ -123,7 +124,7 @@ export async function setAdaptiveIconMonochrome(
 /**
  * Make the adaptive icon's background a solid color, replacing any background image.
  *
- * @param color a hex color, e.g. `#FF5733`. Written verbatim; Android decides if it is valid.
+ * @param color a hex color, e.g. `#FF5733`. Written verbatim and not validated here.
  */
 export async function setAdaptiveIconBackgroundColor(
   color: string,
@@ -138,11 +139,12 @@ export async function setAdaptiveIconBackgroundColor(
 }
 
 /**
- * Remove both descriptors and the layer images at every density written here. Layers left in
- * other buckets by older versions are not swept, and the color resource is left to the template.
+ * Remove both descriptors and the layer images at each density this module writes. Layer images
+ * left in other density buckets by older versions, and the background color resource, are left
+ * alone.
  *
- * Deleted rather than emptied: a childless `<adaptive-icon>` is valid and renders nothing, where
- * a missing one falls back to the legacy PNGs.
+ * The descriptors are deleted rather than emptied, since an `<adaptive-icon>` with no children is
+ * valid and renders nothing, while a missing one falls back to the legacy PNGs.
  */
 export async function clearAdaptiveIcon(project: MobileProject): Promise<void> {
   await AdaptiveIconDescriptor.remove(project);
@@ -201,7 +203,8 @@ async function writeLayerImage(
   const before = Math.floor((size - inner) / 2);
   const after = size - inner - before;
 
-  // Two separate pipelines, per https://github.com/lovell/sharp/issues/2378#issuecomment-864132578
+  // resize and extend need separate pipelines, per
+  // https://github.com/lovell/sharp/issues/2378#issuecomment-864132578
   const resized = await sharp(source)
     .resize(inner, inner, CONTAIN)
     .png()
@@ -228,14 +231,14 @@ async function writeLegacyIcon(
   const dest = mipmap(project, density, 'ic_launcher.png');
   await assertParentDirs(dest);
 
-  // The margin is part of a pre-adaptive icon: launchers drew these bitmaps unmasked, so the
-  // breathing room had to be in the image. size/12 holds it at the template's ~83% artwork at
-  // every density.
+  // Pre-adaptive launchers drew these bitmaps unmasked, so the margin has to be baked into the
+  // image. size / 12 keeps it at the template's ~83% artwork at every density.
   const padding = Math.round(size / 12);
 
-  // Two separate pipelines, per https://github.com/lovell/sharp/issues/2378#issuecomment-864132578
-  // .png() on every intermediate: without it the buffer keeps the source's encoding, and a
-  // JPEG has no alpha channel for the letterbox padding to land in - it comes out black.
+  // resize and extend need separate pipelines, per
+  // https://github.com/lovell/sharp/issues/2378#issuecomment-864132578
+  // Every intermediate is encoded as PNG. Without that the buffer keeps the source's format, and
+  // a JPEG has no alpha channel for the letterbox padding, which then comes out black.
   const resized = await sharp(source)
     .resize(size, size, CONTAIN)
     .png()
@@ -274,8 +277,9 @@ async function writeLegacyRoundIcon(
     size / 2
   }" fill="#ffffff"/></svg>`;
 
-  // Same as above, and it matters more here: `dest-in` writes the circle into the alpha
-  // channel, so without one the mask is silently dropped and the icon stays square.
+  // Encoded as PNG for the same reason as the legacy icon above, and it matters more here.
+  // `dest-in` composites the circle into the alpha channel, so without one the mask does nothing
+  // and the icon stays square.
   const resized = await sharp(source)
     .resize(size, size, CONTAIN)
     .png()
@@ -291,11 +295,11 @@ async function writeLegacyRoundIcon(
 }
 
 /**
- * Point @color/ic_launcher_background at a color, creating the file if needed.
+ * Point `@color/ic_launcher_background` at a color, creating the file if needed.
  *
- * The only path that writes an @color reference into the descriptor, and it always writes the
- * node too - so the descriptor can never reference a color that is missing, which aapt2 fails
- * the build over.
+ * This is the only path that writes an `@color` reference into the descriptor, and it always
+ * writes the color node too, so the descriptor can't end up referencing a color that doesn't
+ * exist. aapt2 fails the build on that.
  */
 async function writeBackgroundColor(
   project: MobileProject,
@@ -313,8 +317,7 @@ async function writeBackgroundColor(
     return;
   }
 
-  // The template ships this file and it may hold unrelated colors, so replace the single node
-  // rather than overwriting the document.
+  // The template ships this file and it may hold other colors, so replace just the one node.
   const file = await openXml(project, BACKGROUND_COLOR_FILE, 'resources');
   const target = `resources/color[@name='${BACKGROUND_COLOR_RESOURCE}']`;
 
@@ -326,8 +329,8 @@ async function writeBackgroundColor(
 }
 
 /**
- * Point the manifest at the launcher icons and flush the project. Every public function ends
- * here, so each is self-contained and a caller never has to remember to commit.
+ * Point the manifest at the launcher icons and flush the project. Every exported function ends
+ * here, so callers never have to commit themselves.
  */
 async function commit(project: MobileProject): Promise<void> {
   project.android?.getAndroidManifest()?.setAttrs('manifest/application', {

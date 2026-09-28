@@ -10,6 +10,7 @@ import { PlistFile } from '../plist';
 import { PlatformProject } from '../platform-project';
 import { Logger } from '../logger';
 import { assertParentDirs } from '../util/fs';
+import PbxFile from 'xcode/lib/pbxFile';
 
 const defaultEntitlementsPlist = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -538,22 +539,123 @@ export class IosProject extends PlatformProject {
    * the project tree) if the app target can't be found.
    */
   async addFile(path: string): Promise<void> {
+    const { relativePath, groupKey } = this.resolvePbxGroup(path);
+
+    this.pbxProject?.addSourceFile(relativePath, {}, groupKey);
+  }
+
+  /**
+   * Add a file to the app target's Resources build phase.
+   *
+   * `pbxProject.addResourceFile()` isn't used because it dereferences `pbxGroupByName('Resources')`
+   * without a null check and the Capacitor template has no such group, so it throws. The
+   * primitives it wraps are called directly instead.
+   *
+   * @param path project-relative, e.g. `App/AppIcon.icon`
+   * @param lastKnownFileType the pbx file type, since `xcode` infers `unknown` for most extensions
+   */
+  async addResourceFile(path: string, lastKnownFileType?: string): Promise<void> {
+    const pbx = this.pbxProject;
+
+    if (!pbx) {
+      return;
+    }
+
+    const { relativePath, groupKey, targetId } = this.resolvePbxGroup(path);
+    const file = new PbxFile(relativePath, { lastKnownFileType, target: targetId });
+    file.target = targetId;
+
+    // Always remove and re-add, rather than bailing out when a reference already exists. That
+    // keeps repeat calls idempotent, and it repairs a reference that was never added to the
+    // build phase. One dragged into Xcode with "Add to targets" unchecked passes a dedupe check
+    // but never reaches actool.
+    this.unregisterResourceFile(file, groupKey);
+
+    file.uuid = pbx.generateUuid();
+    file.fileRef = pbx.generateUuid();
+
+    pbx.addToPbxBuildFileSection(file);
+    pbx.addToPbxResourcesBuildPhase(file);
+    pbx.addToPbxFileReferenceSection(file);
+    pbx.addToPbxGroup(file, groupKey);
+
+    // PbxFile always sets the same keys, and the writer only drops empty ones under
+    // `omitEmptyValues`, which would change how the whole project serializes. Prune this one
+    // object instead, or the pbxproj ends up with literal `fileEncoding = undefined;` lines.
+    const ref = pbx.pbxFileReferenceSection()[file.fileRef];
+
+    for (const key of Object.keys(ref)) {
+      if (ref[key] === undefined) {
+        delete ref[key];
+      }
+    }
+  }
+
+  /** Remove a file added by {@link addResourceFile}. A no-op if it was never added. */
+  async removeResourceFile(path: string, lastKnownFileType?: string): Promise<void> {
+    const pbx = this.pbxProject;
+
+    if (!pbx) {
+      return;
+    }
+
+    const { relativePath, groupKey, targetId } = this.resolvePbxGroup(path);
+    const file = new PbxFile(relativePath, { lastKnownFileType, target: targetId });
+
+    file.target = targetId;
+
+    this.unregisterResourceFile(file, groupKey);
+  }
+
+  /**
+   * Remove a file from the build file section, the reference section, its group and the Resources
+   * build phase. Removing the reference copies the existing uuid onto `file`, so the later steps
+   * match it. Anything already absent is skipped.
+   */
+  private unregisterResourceFile(file: any, groupKey: string | undefined): void {
+    const pbx = this.pbxProject;
+
+    if (!pbx) {
+      return;
+    }
+
+    pbx.removeFromPbxBuildFileSection(file);
+    pbx.removeFromPbxFileReferenceSection(file);
+    pbx.removeFromPbxGroup(file, groupKey);
+    pbx.removeFromPbxResourcesBuildPhase(file);
+  }
+
+  /**
+   * Work out where a project-relative path belongs in the pbx tree. A path starting with the
+   * target directory goes in the app target's group, anything else in the unnamed group at the
+   * root. The returned path is relative to that group, which is what a file reference stores.
+   */
+  private resolvePbxGroup(path: string): {
+    relativePath: string;
+    groupKey: string | undefined;
+    targetId: string | undefined;
+  } {
     const groups = this.pbxProject?.hash.project.objects['PBXGroup'] ?? [];
+
     const emptyGroup = Object.entries(groups).find(([key, value]: [string, any]) => {
       return value.isa === 'PBXGroup' && typeof value.name === 'undefined'
     });
 
-    const appTarget = this.getAppTargetName();
+    // Look the target up once; getTargets() rebuilds every target and its build configurations.
+    const target = this.getAppTarget();
+    const appTarget = target?.name;
     const appGroup = Object.entries(groups).find(([key, value]: [string, any]) => {
       return value.isa === 'PBXGroup' && (value.name === appTarget || value.path === appTarget);
     });
 
     const pathSplit = path.split(sep);
-    if (pathSplit[0] === appTarget && appGroup) {
-      this.pbxProject?.addSourceFile(pathSplit.slice(1).join(sep), {}, appGroup?.[0]);
-    } else {
-      this.pbxProject?.addSourceFile(path, {}, emptyGroup?.[0]);
-    }
+    const inAppGroup = pathSplit[0] === appTarget && !!appGroup;
+
+    return {
+      relativePath: inAppGroup ? pathSplit.slice(1).join(sep) : path,
+      groupKey: inAppGroup ? appGroup?.[0] : emptyGroup?.[0],
+      targetId: target?.id,
+    };
   }
 
   private async assertEntitlementsFile(targetName: IosTargetName, buildName: IosBuildName | null) {

@@ -21,6 +21,23 @@ import { readSource } from '../read-src';
 import { Logger } from '../logger';
 import { compare } from '../util/gradle-versions';
 
+const LAUNCHER_ACTIVITY =
+  "manifest/application[1]/activity[intent-filter/category/@android:name='android.intent.category.LAUNCHER']";
+
+/**
+ * Escapes an app name for aapt2, which reads backslash escapes, reads a
+ * leading @ or ? as a resource reference, drops unescaped double quotes and
+ * rejects an unescaped apostrophe. The backslash goes first, so the ones
+ * added after it stay single.
+ */
+function escapeForAapt(name: string): string {
+  return name
+    .replace(/\\/g, '\\\\')
+    .replace(/^(\s*)([@?])/, '$1\\$2')
+    .replace(/"/g, '\\"')
+    .replace(/'/g, "\\'");
+}
+
 export class AndroidProject extends PlatformProject {
   private manifest: XmlFile;
   private buildGradle: GradleFile | null = null;
@@ -105,37 +122,45 @@ export class AndroidProject extends PlatformProject {
     return this.loadGradle(path);
   }
 
+  /**
+   * Set the app name on the application and on the launcher activity. A
+   * label that references a string in `values/strings.xml` gets the name in
+   * that string, and any other label, or a missing one, is set to the name.
+   * The name is escaped for each, so its special characters show as written.
+   */
   async setAppName(appName: string) {
-    const application = this.manifest.find('manifest/application');
+    const application = this.manifest.find('manifest/application')?.[0];
     if (!application) {
       Logger.v('android', 'setAppName', `No <application> node found in <manifest>`);
       return;
     }
-    const label = application[0].getAttribute('android:label');
-    Logger.v('android', 'setAppName', `current app label is ${label}`);
+    const launcher = this.manifest.find(LAUNCHER_ACTIVITY)?.[0];
+    const name = escapeForAapt(appName);
 
-    if (label) {
-      if (label.indexOf('@string') === 0) {
-        Logger.v('android', 'setAppName', 'android:label pointing to strings.xml resource file. Reading values/strings.xml');
-
-        const stringsFile = await this.getResourceXmlFile('values/strings.xml');
-
-        if (!stringsFile) {
-          Logger.v('android', 'setAppName', 'Unable to load values/strings.xml resource file');
-          return;
-        }
-
-        await stringsFile.load();
-
-        const attr = label.replace('@string/', '');
-
-        // TODO: use the value specified in the @strings attribute
-        Logger.v('android', 'setAppName', `Updated values/strings.xml <string name="${attr}"> to <string name="${attr}">${appName}</string>`);
-        stringsFile.replaceFragment(`resources/string[@name="${attr}"]`, `<string name="${attr}">${appName}</string>`);
+    for (const element of [application, launcher]) {
+      if (!element) {
+        continue;
       }
-    } else {
-      Logger.v('android', 'setAppName', `No android:label on <application> node, setting value directly`);
-      application[0].setAttribute('android:label', appName);
+      const label = element.getAttribute('android:label');
+      Logger.v('android', 'setAppName', `Current android:label on <${element.tagName}> is ${label}`);
+      if (!label?.startsWith('@string/')) {
+        // The manifest's serializer escapes the attribute for XML.
+        element.setAttribute('android:label', name);
+        Logger.v('android', 'setAppName', `Set android:label on <${element.tagName}>`);
+        continue;
+      }
+      const stringsFile = await this.getResourceXmlFile('values/strings.xml');
+      if (!stringsFile) {
+        Logger.v('android', 'setAppName', 'Unable to load values/strings.xml resource file');
+        return;
+      }
+      await stringsFile.load();
+      const attr = label.replace('@string/', '');
+      // The strings file's serializer escapes the text for XML.
+      stringsFile.find(`resources/string[@name="${attr}"]`)?.forEach(string => {
+        string.textContent = name;
+        Logger.v('android', 'setAppName', `Updated values/strings.xml <string name="${attr}">`);
+      });
     }
   }
 
